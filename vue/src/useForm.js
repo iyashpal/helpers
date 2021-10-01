@@ -4,6 +4,7 @@ import { reactive, watch } from 'vue'
 import cloneDeep from 'lodash.clonedeep'
 
 export default function useForm(...args) {
+
     const rememberKey = typeof args[0] === 'string' ? args[0] : null
 
     const data = (typeof args[0] === 'string' ? args[1] : args[0]) || {}
@@ -17,7 +18,9 @@ export default function useForm(...args) {
     let transform = data => data
 
     let form = reactive({
+
         ...data,
+
         isDirty: false,
         errors: {},
         errorMessage: null,
@@ -76,32 +79,38 @@ export default function useForm(...args) {
         },
 
         submit(method, url, options = {}) {
+
             const data = transform(this.data())
+
             const _options = {
+
                 onCancelToken: (token) => {
-                    Axios.CancelToken
+
                     cancelToken = token
 
                     if (options.onCancelToken) {
                         return options.onCancelToken(token)
                     }
                 },
-                onBefore: visit => {
+
+                onBefore: (data, header) => {
+
+                    this.processing = true
+
                     this.wasSuccessful = false
+
                     this.recentlySuccessful = false
+
                     clearTimeout(recentlySuccessfulTimeoutId)
 
                     if (options.onBefore) {
                         return options.onBefore(visit)
                     }
-                },
-                onStart: visit => {
-                    this.processing = true
 
-                    if (options.onStart) {
-                        return options.onStart(visit)
-                    }
+                    return data;
                 },
+
+
                 onProgress: event => {
                     this.progress = event
 
@@ -134,9 +143,9 @@ export default function useForm(...args) {
                 },
 
                 onError: ({ response, request, message }) => {
-                    this.processing = false
                     this.progress = null
                     this.hasErrors = true
+                    this.processing = false
 
                     if (response) {
                         // The request was made and the server responded with a status code
@@ -182,8 +191,8 @@ export default function useForm(...args) {
                 },
 
                 onCancel: () => {
-                    this.processing = false
                     this.progress = null
+                    this.processing = false
 
                     if (options.onCancel) {
                         return options.onCancel()
@@ -203,36 +212,33 @@ export default function useForm(...args) {
             return Axios({
                 method, url, data,
 
-                cancelToken: new Axios.CancelToken((cancel) => cancelToken = cancel),
+                cancelToken: new Axios.CancelToken(_options.onCancelToken),
 
-                transformRequest: [(data, headers) => {
+                transformRequest: [_options.onBefore, ...Axios.defaults.transformRequest],
 
-                    this.wasSuccessful = false
-                    this.processing = true;
-                    this.recentlySuccessful = false
-                    clearTimeout(recentlySuccessfulTimeoutId)
-
-                    return data;
-                }, ...Axios.defaults.transformRequest],
-
-            }).then(_options.onSuccess).catch(_options.onError)
-                .then(_options.onFinish);
+            }).then(_options.onSuccess).catch(_options.onError).then(_options.onFinish);
         },
+
         get(url, options) {
             return this.submit('get', url, options)
         },
+
         post(url, options) {
             return this.submit('post', url, options)
         },
+
         put(url, options) {
             return this.submit('put', url, options)
         },
+
         patch(url, options) {
             return this.submit('patch', url, options)
         },
+
         delete(url, options) {
             return this.submit('delete', url, options)
         },
+
         cancel() {
             if (cancelToken) {
                 cancelToken.cancel()
