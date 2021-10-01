@@ -1,4 +1,4 @@
-import Axios from 'axios'
+import HttpRequest from './Request'
 import isEqual from 'lodash.isequal'
 import { reactive, watch } from 'vue'
 import cloneDeep from 'lodash.clonedeep'
@@ -22,21 +22,24 @@ export default function useForm(...args) {
         ...data,
 
         isDirty: false,
+
         errors: {},
-        errorMessage: null,
+
         hasErrors: false,
+
         processing: false,
+
         progress: null,
+
         wasSuccessful: false,
+
         recentlySuccessful: false,
 
         data() {
-            return Object
-                .keys(data)
-                .reduce((carry, key) => {
-                    carry[key] = this[key]
-                    return carry
-                }, {})
+            return Object.keys(data).reduce((carry, key) => {
+                carry[key] = this[key]
+                return carry
+            }, {})
         },
 
         transform(callback) {
@@ -46,19 +49,20 @@ export default function useForm(...args) {
         },
 
         reset(...fields) {
+
             let clonedDefaults = cloneDeep(defaults)
+
             if (fields.length === 0) {
+
                 Object.assign(this, clonedDefaults)
+
             } else {
-                Object.assign(
-                    this,
-                    Object
-                        .keys(clonedDefaults)
-                        .filter(key => fields.includes(key))
-                        .reduce((carry, key) => {
-                            carry[key] = clonedDefaults[key]
-                            return carry
-                        }, {}),
+                Object.assign(this, Object.keys(clonedDefaults)
+                    .filter(key => fields.includes(key))
+                    .reduce((carry, key) => {
+                        carry[key] = clonedDefaults[key]
+                        return carry
+                    }, {}),
                 )
             }
 
@@ -66,8 +70,7 @@ export default function useForm(...args) {
         },
 
         clearErrors(...fields) {
-            this.errors = Object
-                .keys(this.errors)
+            this.errors = Object.keys(this.errors)
                 .reduce((carry, field) => ({
                     ...carry,
                     ...(fields.length > 0 && !fields.includes(field) ? { [field]: this.errors[field] } : {}),
@@ -93,7 +96,7 @@ export default function useForm(...args) {
                     }
                 },
 
-                onBefore: (data, header) => {
+                onStart: () => {
 
                     this.processing = true
 
@@ -103,11 +106,9 @@ export default function useForm(...args) {
 
                     clearTimeout(recentlySuccessfulTimeoutId)
 
-                    if (options.onBefore) {
-                        return options.onBefore(visit)
+                    if (options.onStart) {
+                        options.onStart()
                     }
-
-                    return data;
                 },
 
 
@@ -142,51 +143,17 @@ export default function useForm(...args) {
                     return Promise.resolve(isSuccess);
                 },
 
-                onError: ({ response, request, message }) => {
+                onError: (errors, error) => {
                     this.progress = null
+                    this.errors = errors
                     this.hasErrors = true
                     this.processing = false
 
-                    if (response) {
-                        // The request was made and the server responded with a status code
-                        // that falls out of the range of 2xx
-                        let { data, status, headers } = response;
-
-                        if (data.message) {
-                            this.errorMessage = data.message;
-                        }
-
-                        if (data.errors && (typeof data.errors === 'object' || typeof data.errors === 'array')) {
-                            for (let i in data.errors) {
-                                switch (typeof data.errors[i]) {
-                                    case 'object':
-                                        this.errors[i] = Object.values(data.errors[i])[0];
-                                        break;
-                                    case 'array':
-                                        this.errors[i] = data.errors[i][0];
-                                        break;
-                                    default:
-                                        this.errors[i] = data.errors[i];
-                                        break;
-                                }
-                            }
-                        }
-
-                    } else if (request) {
-                        // The request was made but no response was received
-                        // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-                        // http.ClientRequest in node.js
-                        this.errorMessage = "Something went wrong";
-                    } else {
-                        // Something happened in setting up the request that triggered an Error
-                        this.errorMessage = error.message;
+                    if (options.onError) {
+                        return options.onError(errors, error)
                     }
 
-                    // if (options.onError) {
-                    //     return options.onError(errors)
-                    // }
-
-                    return Promise.reject({ response, request, message })
+                    return Promise.reject(errors, error)
 
                 },
 
@@ -209,14 +176,11 @@ export default function useForm(...args) {
 
 
 
-            return Axios({
-                method, url, data,
-
-                cancelToken: new Axios.CancelToken(_options.onCancelToken),
-
-                transformRequest: [_options.onBefore, ...Axios.defaults.transformRequest],
-
-            }).then(_options.onSuccess).catch(_options.onError).then(_options.onFinish);
+            if (method === 'delete') {
+                return HttpRequest.delete(url, { ..._options, data })
+            } else {
+                return HttpRequest[method](url, data, _options)
+            }
         },
 
         get(url, options) {
