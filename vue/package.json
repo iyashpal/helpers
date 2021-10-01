@@ -1,0 +1,44 @@
+{
+  "name": "helpers-vue",
+  "version": "0.0.1",
+  "description": "Collection of VueJS helper function/classes.",
+  "author": "Yash Pal <iyashpal.dev@gmail.com>",
+  "license": "MIT",
+  "contributors": [
+    "Yash Pal <iyashpal.dev@gmail.com>"
+  ],
+  "homepage": "https://github.com/iyashpal/vue-helpers#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iyashpal/vue-helpers.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iyashpal/vue-helpers/issues"
+  },
+  "main": "./dist/index.js",
+  "unpkg": "./dist/index.umd.js",
+  "source": "./src/index.js",
+  "scripts": {
+    "build": "npm run build:cjs && npm run build:umd",
+    "build:cjs": "microbundle --format cjs",
+    "build:umd": "microbundle --format umd",
+    "dev": "microbundle watch --format cjs"
+  },
+  "keywords": [
+    "vue",
+    "vue-helpers"
+  ],
+  "devDependencies": {
+    "axios": "^0.21.4",
+    "microbundle": "^0.13.3",
+    "vue": "^3.2.19"
+  },
+  "peerDependencies": {
+    "axios": "^0.21.4",
+    "vue": "^3.0.0"
+  },
+  "dependencies": {
+    "lodash.clonedeep": "^4.5.0",
+    "lodash.isequal": "^4.5.0"
+  }
+}
