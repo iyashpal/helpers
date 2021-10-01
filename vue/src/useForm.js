@@ -217,7 +217,7 @@ export default function useForm(...args) {
 
     })
 
-    watch(form, newValue => {
+    watch(form, () => {
         form.isDirty = !isEqual(form.data(), defaults)
     }, { immediate: true, deep: true })
 

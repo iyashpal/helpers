@@ -1,27 +1,26 @@
 import Axios from 'axios'
 
-export default function () {
-    return {
-        get(url, data, options) {
-            return sendRequest({ url, method: 'get', data, ...options })
-        },
+export default {
+    
+    get(url, data, options) {
+        return sendRequest({ url, method: 'get', data, ...options })
+    },
 
-        post(url, data, options) {
-            return sendRequest({ url, method: 'post', data, ...options })
-        },
+    post(url, data, options) {
+        return sendRequest({ url, method: 'post', data, ...options })
+    },
 
-        put(url, data, options) {
-            return sendRequest({ url, method: 'put', data, ...options })
-        },
+    put(url, data, options) {
+        return sendRequest({ url, method: 'put', data, ...options })
+    },
 
-        patch(url, data, options) {
-            return sendRequest({ url, method: 'patch', data, ...options })
-        },
+    patch(url, data, options) {
+        return sendRequest({ url, method: 'patch', data, ...options })
+    },
 
-        delete(url, options) {
-            return sendRequest({ url, method: "delete", ...options })
-        },
-    }
+    delete(url, options) {
+        return sendRequest({ url, method: "delete", ...options })
+    },
 }
 
 
@@ -46,7 +45,7 @@ function sendRequest(options = {}) {
 
     // Convert simple data to form data.
     if (!(defaults.data instanceof FormData)) {
-        defaults.data = objecToFormData(defaults.data)
+        defaults.data = objectToFormData(defaults.data)
     }
 
     // Start the request
@@ -76,9 +75,9 @@ function sendRequest(options = {}) {
 
     }).catch(error => {
 
-        let { response: { data: { errors, message }, status }, request } = error
+        let { response: { data: { errors } } } = error
 
-        let scopedErrors = errorBag ? (errors[errorBag] ? errors[errorBag] : {}) : errors;
+        let scopedErrors = defaults.errorBag ? (errors[defaults.errorBag] ? errors[defaults.errorBag] : {}) : errors;
 
         if (errors && typeof scopedErrors === 'object') {
             scopedErrors = mapScopedErrors(scopedErrors)
