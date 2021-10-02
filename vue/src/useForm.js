@@ -87,6 +87,8 @@ export default function useForm(...args) {
 
             const _options = {
 
+                ...options,
+
                 onCancelToken: (token) => {
 
                     cancelToken = token
@@ -134,13 +136,15 @@ export default function useForm(...args) {
 
                     recentlySuccessfulTimeoutId = setTimeout(() => this.recentlySuccessful = false, 2000)
 
-                    const isSuccess = options.onSuccess ? options.onSuccess(response) : response;
+                    if (options.onSuccess) {
+                        options.onSuccess(response)
+                    }
 
                     defaults = cloneDeep(this.data())
 
                     this.isDirty = false
 
-                    return Promise.resolve(isSuccess);
+                    return Promise.resolve(response);
                 },
 
                 onError: (errors, error) => {
@@ -150,7 +154,7 @@ export default function useForm(...args) {
                     this.processing = false
 
                     if (options.onError) {
-                        return options.onError(errors, error)
+                        options.onError(errors, error)
                     }
 
                     return Promise.reject(errors, error)
@@ -170,7 +174,10 @@ export default function useForm(...args) {
                     this.processing = false
                     this.progress = null
                     cancelToken = null
-                    return options.onFinish ? options.onFinish(response) : Promise.resolve(response);
+
+                    if (options.onFinish) {
+                        options.onFinish(response);
+                    }
                 },
             }
 

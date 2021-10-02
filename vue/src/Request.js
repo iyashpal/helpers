@@ -87,7 +87,7 @@ function sendRequest(options = {}) {
 
         return Promise.reject(scopedErrors, error);
 
-    }).finally(response => {
+    }).then(response => {
 
         defaults.onFinish(response)
 
