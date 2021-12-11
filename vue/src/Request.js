@@ -1,36 +1,15 @@
 import Axios from 'axios'
 
-export default {
-    
-    get(url, data, options) {
-        return sendRequest({ url, method: 'get', data, ...options })
-    },
-
-    post(url, data, options) {
-        return sendRequest({ url, method: 'post', data, ...options })
-    },
-
-    put(url, data, options) {
-        return sendRequest({ url, method: 'put', data, ...options })
-    },
-
-    patch(url, data, options) {
-        return sendRequest({ url, method: 'patch', data, ...options })
-    },
-
-    delete(url, options) {
-        return sendRequest({ url, method: "delete", ...options })
-    },
-}
+export default function HttpRequest(method = 'GET', url = "", data, options = {}) {
 
 
-function sendRequest(options = {}) {
-    let defaults = {
-        url: "",
-        method: "get",
-        data: {},
+    let _defaults = Object.assign({
+        url,
+        method,
+        data,
         headers: {},
         errorBag: '',
+        methodSpoofing: true,
         onCancelToken: () => { },
         onStart: () => { },
         onProgress: () => { },
@@ -38,63 +17,86 @@ function sendRequest(options = {}) {
         onCancel: () => { },
         onSuccess: () => { },
         onError: () => { },
-    }
+    }, options)
 
-
-    Object.assign(defaults, options)
 
     // Convert simple data to form data.
-    if (!(defaults.data instanceof FormData)) {
-        defaults.data = objectToFormData(defaults.data)
-    }
+    if (hasFiles(_defaults.data) && !(_defaults.data instanceof FormData)) {
 
-    // Start the request
-    defaults.onStart()
+        _defaults.data = objectToFormData(_defaults.data)
 
-    return Axios({
-        url: defaults.url,
-        method: defaults.method,
-        data: defaults.method === 'get' ? {} : defaults.data,
-        params: defaults.method === 'get' ? defaults.data : {},
-        headers: {
-            ...defaults.headers,
-            'X-Requested-With': "XMLHttpRequest",
-        },
 
-        onUploadProgress: progress => {
-            if (defaults.data instanceof FormData) {
-                progress.percentage = Math.round(progress.loaded / progress.total * 100)
-                defaults.onProgress(progress)
-            }
-        },
-    }).then(response => {
+        if (['PUT', 'PATCH'].includes(method) && _defaults.methodSpoofing) {
 
-        defaults.onSuccess(response)
+            _defaults.method = "POST";
 
-        return Promise.resolve(response)
+            _defaults.data.append('_method', method.toLowerCase());
 
-    }).catch(error => {
-
-        let { response: { data: { errors } } } = error
-
-        let scopedErrors = defaults.errorBag ? (errors[defaults.errorBag] ? errors[defaults.errorBag] : {}) : errors;
-
-        if (errors && typeof scopedErrors === 'object') {
-            scopedErrors = mapScopedErrors(scopedErrors)
         }
 
-        defaults.onError(scopedErrors, error)
+    }
 
-        return Promise.reject(scopedErrors, error);
 
-    }).then(response => {
+    // _defaults.data.append('_method', 'patch');
 
-        defaults.onFinish(response)
+    if (method === 'delete') {
 
-        return Promise.resolve(response);
-    })
+        return Axios.delete(url, { ...options })
 
+    } else {
+        // Start the request
+        _defaults.onStart()
+
+        return Axios({
+
+            ..._defaults,
+
+            data: method === 'GET' ? {} : _defaults.data,
+
+            params: method === 'GET' ? _defaults.data : {},
+
+            headers: {
+                ..._defaults.headers,
+
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+
+            onUploadProgress: progress => {
+                if (ObjToFormData instanceof FormData) {
+                    progress.percentage = Math.round(progress.loaded / progress.total * 100)
+                    _defaults.onProgress(progress)
+                }
+            },
+
+        }).then(response => {
+
+            _defaults.onSuccess(response)
+
+            return Promise.resolve(response)
+
+        }).catch(error => {
+
+            let { response: { data: { errors } } } = error
+
+            let scopedErrors = _defaults.errorBag ? (errors[_defaults.errorBag] ? errors[_defaults.errorBag] : {}) : errors;
+
+            if (errors && typeof scopedErrors === 'object') {
+                scopedErrors = mapScopedErrors(scopedErrors)
+            }
+
+            _defaults.onError(scopedErrors, error)
+
+            return Promise.reject(scopedErrors, error);
+
+        }).then(response => {
+
+            _defaults.onFinish(response)
+
+            return Promise.resolve(response);
+        });
+    }
 }
+
 
 function mapScopedErrors(scopedErrors = {}) {
 
@@ -169,4 +171,15 @@ function append(form, key, value) {
     }
 
     objectToFormData(value, form, key)
+}
+
+
+function hasFiles(data) {
+    return (
+        data instanceof File ||
+        data instanceof Blob ||
+        (data instanceof FileList && data.length > 0) ||
+        (data instanceof FormData && Array.from(data.values()).some((value) => hasFiles(value))) ||
+        (typeof data === 'object' && data !== null && Object.values(data).some((value) => hasFiles(value)))
+    )
 }

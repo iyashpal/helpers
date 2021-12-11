@@ -1,10 +1,9 @@
-import HttpRequest from './Request'
 import isEqual from 'lodash.isequal'
 import { reactive, watch } from 'vue'
+import HttpRequest from './Request.js'
 import cloneDeep from 'lodash.clonedeep'
 
 export default function useForm(...args) {
-
     const rememberKey = typeof args[0] === 'string' ? args[0] : null
 
     const data = (typeof args[0] === 'string' ? args[1] : args[0]) || {}
@@ -181,33 +180,28 @@ export default function useForm(...args) {
                 },
             }
 
+            return HttpRequest(method, url, data, _options)
 
-
-            if (method === 'delete') {
-                return HttpRequest.delete(url, { ..._options, data })
-            } else {
-                return HttpRequest[method](url, data, _options)
-            }
         },
 
         get(url, options) {
-            return this.submit('get', url, options)
+            return this.submit('GET', url, options)
         },
 
         post(url, options) {
-            return this.submit('post', url, options)
+            return this.submit('POST', url, options)
         },
 
         put(url, options) {
-            return this.submit('put', url, options)
+            return this.submit('PUT', url, options)
         },
 
         patch(url, options) {
-            return this.submit('patch', url, options)
+            return this.submit('PATCH', url, options)
         },
 
         delete(url, options) {
-            return this.submit('delete', url, options)
+            return this.submit('DELETE', url, options)
         },
 
         cancel() {
