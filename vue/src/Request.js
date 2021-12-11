@@ -1,6 +1,11 @@
 import Axios from 'axios'
 
-export default function HttpRequest(method = 'GET', url = "", data, options = {}) {
+export default function HttpRequest(method, url, data, options) {
+
+    url = typeof url === 'string' ? url : ""
+    data = typeof data === 'object' ? data : {}
+    method = typeof method === 'string' ? method : "GET"
+    options = typeof options === 'object' ? options : {}
 
 
     let _defaults = Object.assign({
@@ -10,6 +15,7 @@ export default function HttpRequest(method = 'GET', url = "", data, options = {}
         headers: {},
         errorBag: '',
         methodSpoofing: true,
+        forceFormData: false,
         onCancelToken: () => { },
         onStart: () => { },
         onProgress: () => { },
@@ -21,7 +27,7 @@ export default function HttpRequest(method = 'GET', url = "", data, options = {}
 
 
     // Convert simple data to form data.
-    if (hasFiles(_defaults.data) && !(_defaults.data instanceof FormData)) {
+    if ((hasFiles(_defaults.data) || _defaults.forceFormData) && !(_defaults.data instanceof FormData)) {
 
         _defaults.data = objectToFormData(_defaults.data)
 
@@ -62,7 +68,7 @@ export default function HttpRequest(method = 'GET', url = "", data, options = {}
             },
 
             onUploadProgress: progress => {
-                if (ObjToFormData instanceof FormData) {
+                if (_defaults.data instanceof FormData) {
                     progress.percentage = Math.round(progress.loaded / progress.total * 100)
                     _defaults.onProgress(progress)
                 }
